@@ -24,3 +24,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.p-4 {
+    padding: calc(var(--spacing) * 15);
+}
+
+.py-8 {
+    padding-block: calc(var(--spacing) * 12);
+}
