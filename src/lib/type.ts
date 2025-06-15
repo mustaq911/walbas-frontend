@@ -1,21 +1,26 @@
-// src/lib/types.ts
-export interface Product {
-  id: string;
+export interface ApiProduct {
+  id: number;
   title: string;
   description: string;
-  price: number;
-  currentBid?: number;
+  category: string;
   imageUrl: string;
-  endTime: string;
-  status: 'active' | 'sold' | 'expired';
-  sellerId?: string;
-  condition?: string;
-  category?: string;
+  basePrice: number;
+  auctionStart: string;
+  auctionEnd: string;
 }
 
-export interface Seller {
-  name: string;
-  rating: number;
-  joinDate: string;
-  avatar: string;
+// Frontend representation with only necessary additions
+export interface Product extends ApiProduct {
+  status: 'active' | 'expired';
+}
+
+export interface ProductCardProps {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  basePrice: number;
+  auctionEnd: string;
+  status: 'active' | 'expired';
 }
