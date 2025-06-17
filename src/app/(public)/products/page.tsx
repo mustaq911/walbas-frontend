@@ -1,3 +1,4 @@
+// src/app/(public)/products/page.tsx
 import { getProducts } from '@/lib/api-service';
 import ProductCard from '@/components/product/ProductCard';
 import Filters from '@/components/product/Filters';
@@ -14,6 +15,9 @@ interface ProductsPageProps {
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  // Destructure searchParams at the start to avoid direct access
+  const { category, sort = 'newest', search } = searchParams || {};
+  
   let products: Product[] = [];
   let error = '';
 
@@ -23,24 +27,24 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     products = fetchedProducts || [];
     
     // Apply filters if products were fetched successfully
-    if (searchParams?.category) {
+    if (category) {
       products = products.filter(
-        product => product.category.toLowerCase() === (searchParams.category ? searchParams.category.toLowerCase() : '')
+        product => product.category.toLowerCase() === category.toLowerCase()
       );
     }
     
-    if (searchParams?.search) {
-      const searchTerm = searchParams.search.toLowerCase();
+    if (search) {
+      const searchTerm = search.toLowerCase();
       products = products.filter(
         product => 
           product.title.toLowerCase().includes(searchTerm) ||
-          product.description.toLowerCase().includes(searchTerm) ||
+          (product.description && product.description.toLowerCase().includes(searchTerm)) ||
           product.category.toLowerCase().includes(searchTerm)
       );
     }
 
     // Apply sorting
-    switch (searchParams?.sort) {
+    switch (sort) {
       case 'newest':
         products.sort((a, b) => new Date(b.auctionStart).getTime() - new Date(a.auctionStart).getTime());
         break;
@@ -48,10 +52,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         products.sort((a, b) => new Date(a.auctionEnd).getTime() - new Date(b.auctionEnd).getTime());
         break;
       case 'price-low':
-        products.sort((a, b) => a.basePrice - b.basePrice);
+        products.sort((a, b) => (a.basePrice || 0) - (b.basePrice || 0));
         break;
       case 'price-high':
-        products.sort((a, b) => b.basePrice - a.basePrice);
+        products.sort((a, b) => (b.basePrice || 0) - (a.basePrice || 0));
         break;
       default:
         products.sort((a, b) => new Date(b.auctionStart).getTime() - new Date(a.auctionStart).getTime());
@@ -59,7 +63,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   } catch (err) {
     console.error('Failed to fetch products:', err);
     error = err instanceof Error ? err.message : 'Failed to load products. Please try again later.';
-    products = []; // Ensure products is always an array
+    products = [];
   }
 
   return (
@@ -115,7 +119,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 <select 
                   id="sort"
                   className="bg-gray-50 border border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2"
-                  defaultValue={searchParams?.sort || 'newest'}
+                  defaultValue={sort}
                 >
                   <option value="newest">Newest First</option>
                   <option value="ending">Ending Soonest</option>

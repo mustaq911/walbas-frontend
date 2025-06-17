@@ -1,3 +1,4 @@
+// src/lib/api-service.ts
 import { ApiProduct, Product } from '@/lib/type';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -8,27 +9,36 @@ if (!API_BASE_URL) {
 }
 
 async function fetchWithTimeout<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  // Remove leading slash if present to avoid double slashes
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const url = `${API_BASE_URL}/${normalizedEndpoint}`;
+  
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), API_TIMEOUT);
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    signal: controller.signal,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-  
-  clearTimeout(id);
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+    
+    clearTimeout(id);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+  } catch (error) {
+    clearTimeout(id);
+    console.error(`Failed to fetch ${url}:`, error);
+    throw error;
   }
-  
-  return response.json();
 }
-
 
 function transformProduct(apiProduct: ApiProduct): Product {
   const now = new Date();
@@ -38,22 +48,30 @@ function transformProduct(apiProduct: ApiProduct): Product {
   return {
     ...apiProduct,
     status,
-    imageUrl: apiProduct.imageUrl || '/placeholder.jpg'
+    imageUrl: apiProduct.imageUrl || '/placeholder.jpg',
+    basePrice: apiProduct.basePrice || 0,
+    auctionStart: apiProduct.auctionStart || new Date().toISOString(),
+    auctionEnd: apiProduct.auctionEnd || new Date(Date.now() + 86400000).toISOString(), // Default to 1 day from now
+    description: apiProduct.description || 'No description available'
   };
 }
 
-
 export const getProducts = async (): Promise<Product[]> => {
-  const response = await fetchWithTimeout<ApiProduct[]>('/api/products');
-  return response.map(transformProduct);
+  try {
+    const response = await fetchWithTimeout<ApiProduct[]>('api/products');
+    return response.map(transformProduct);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
 };
 
-export const getProduct = async (id: number): Promise<Product | undefined> => {
+export const getProduct = async (id: string): Promise<Product | null> => {
   try {
-    const product = await fetchWithTimeout<ApiProduct>(`/api/products/${id}`);
+    const product = await fetchWithTimeout<ApiProduct>(`api/products/${id}`);
     return transformProduct(product);
   } catch (error) {
-    console.error('Error fetching product:', error);
-    return undefined;
+    console.error(`Error fetching product ${id}:`, error);
+    return null;
   }
 };

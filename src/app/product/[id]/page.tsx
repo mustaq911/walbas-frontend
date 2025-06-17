@@ -2,16 +2,18 @@ import Image from 'next/image';
 import ProductDetails from '@/components/product/ProductDetails';
 import BidHistory from '@/components/product/BidHistory';
 import BidForm from '@/components/product/BidForm';
-import { getProduct } from '@/lib/api';
+import { getProduct } from '@/lib/api-service';
 
 // Using public folder approach
 const defaultAvatar = '/default-avatar.jpg';
 
-export default async function ProductPage({ 
-  params 
-}: { 
-  params: { id: string } 
-}) {
+interface ProductPageProps {
+  params: { 
+    id: string 
+  };
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
   const productId = params.id;
   const product = await getProduct(productId);
   
@@ -34,7 +36,7 @@ export default async function ProductPage({
     );
   }
 
-  const isAuctionEnded = new Date(product.endTime) < new Date();
+  const isAuctionEnded = new Date(product.auctionEnd) < new Date();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -55,7 +57,7 @@ export default async function ProductPage({
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
               <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
                 <Image
-                  src={product.imageUrl}
+                  src={product.imageUrl || '/placeholder.jpg'}
                   alt={product.title}
                   fill
                   className="object-contain"
@@ -71,21 +73,25 @@ export default async function ProductPage({
             <ProductDetails 
               product={{
                 ...product,
-                seller: product.sellerId ? {
-                  name: "Seller Name",
+                price: product.basePrice,
+                currentBid: product.basePrice, 
+                seller: {
+                  name: "Sample Seller",
                   rating: 4.8,
                   joinDate: "2020-05-15",
-                  avatar: defaultAvatar // Use the public path
-                } : undefined
+                  avatar: defaultAvatar
+                }
               }} 
               isAuctionEnded={isAuctionEnded}
             />
             
-            <BidForm 
-              productId={productId} 
-              currentBid={product.currentBid} 
-              isAuctionEnded={isAuctionEnded}
-            />
+            {!isAuctionEnded && (
+              <BidForm 
+                productId={productId} 
+                currentBid={product.basePrice} 
+                isAuctionEnded={isAuctionEnded}
+              />
+            )}
           </div>
         </div>
         
