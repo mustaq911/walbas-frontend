@@ -1,12 +1,12 @@
-// next.config.js
+/** @type {import('next').NextConfig} */
 module.exports = {
   images: {
     remotePatterns: [
       {
-        protocol: 'http',
-        hostname: 'example.com',
+        protocol: 'https',
+        hostname: 'walbaseproduct.s3.us-east-2.amazonaws.com',
         pathname: '/**',
       },
     ],
   },
-}
+};

@@ -58,7 +58,7 @@ function transformProduct(apiProduct: ApiProduct): Product {
 
 export const getProducts = async (): Promise<Product[]> => {
   try {
-    const response = await fetchWithTimeout<ApiProduct[]>('api/products');
+    const response = await fetchWithTimeout<ApiProduct[]>('api/products/all');
     return response.map(transformProduct);
   } catch (error) {
     console.error('Error fetching products:', error);
