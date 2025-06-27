@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
+
 
 interface AuctionCardProps {
   auction: {
@@ -22,7 +24,7 @@ export default function AuctionCard({ auction }: AuctionCardProps) {
     <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       <Link href={`/product/${auction.id}`}>
         <div className="aspect-square bg-gray-100 relative">
-          <img
+          <Image
             src={auction.imageUrl}
             alt={auction.title}
             className="w-full h-full object-contain p-4"

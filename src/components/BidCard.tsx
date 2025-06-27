@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CountdownTimer from '@/components/product/CountdownTimer';
+import Image from 'next/image';
 
 interface BidCardProps {
   bid: {
@@ -21,7 +22,7 @@ export default function BidCard({ bid }: BidCardProps) {
     <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       <Link href={`/product/${bid.product.id}`}>
         <div className="aspect-square bg-gray-100 relative">
-          <img
+          <Image
             src={bid.product.imageUrl}
             alt={bid.product.title}
             className="w-full h-full object-contain p-4"
