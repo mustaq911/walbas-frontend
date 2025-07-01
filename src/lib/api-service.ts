@@ -1,77 +1,46 @@
-// src/lib/api-service.ts
-import { ApiProduct, Product } from '@/lib/type';
+import { Product } from './type';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-const API_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '5000');
 
 if (!API_BASE_URL) {
+  console.error('NEXT_PUBLIC_API_BASE_URL is not defined in .env file');
   throw new Error('NEXT_PUBLIC_API_BASE_URL is not defined');
 }
 
-async function fetchWithTimeout<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  // Remove leading slash if present to avoid double slashes
-  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-  const url = `${API_BASE_URL}/${normalizedEndpoint}`;
-  
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), API_TIMEOUT);
-  
+export async function getProducts(): Promise<Product[]> {
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+    console.log(`Fetching products from: ${API_BASE_URL}/api/products/all`);
+    const response = await fetch(`${API_BASE_URL}/api/products/all`, {
+      cache: 'no-store', // Ensure fresh data for debugging
     });
-    
-    clearTimeout(id);
-    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      console.error(`Failed to fetch products: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch products: ${response.status}`);
     }
-    
-    return response.json();
-  } catch (error) {
-    clearTimeout(id);
-    console.error(`Failed to fetch ${url}:`, error);
-    throw error;
-  }
-}
-
-function transformProduct(apiProduct: ApiProduct): Product {
-  const now = new Date();
-  const auctionEnd = new Date(apiProduct.auctionEnd);
-  const status = auctionEnd < now ? 'expired' : 'active';
-  
-  return {
-    ...apiProduct,
-    status,
-    imageUrl: apiProduct.imageUrl || '/placeholder.jpg',
-    basePrice: apiProduct.basePrice || 0,
-    auctionStart: apiProduct.auctionStart || new Date().toISOString(),
-    auctionEnd: apiProduct.auctionEnd || new Date(Date.now() + 86400000).toISOString(), // Default to 1 day from now
-    description: apiProduct.description || 'No description available'
-  };
-}
-
-export const getProducts = async (): Promise<Product[]> => {
-  try {
-    const response = await fetchWithTimeout<ApiProduct[]>('api/products/all');
-    return response.map(transformProduct);
+    const data = await response.json();
+    console.log('Fetched products:', data);
+    return data;
   } catch (error) {
     console.error('Error fetching products:', error);
     return [];
   }
-};
+}
 
-export const getProduct = async (id: string): Promise<Product | null> => {
+export async function getProduct(id: string): Promise<Product | null> {
   try {
-    const product = await fetchWithTimeout<ApiProduct>(`api/products/${id}`);
-    return transformProduct(product);
+    console.log(`Fetching product with ID ${id} from: ${API_BASE_URL}/api/products/${id}`);
+    const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
+      cache: 'no-store', // Ensure fresh data for debugging
+    });
+    if (!response.ok) {
+      console.warn(`Product with ID ${id} not found: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    const data = await response.json();
+    console.log(`Fetched product with ID ${id}:`, data);
+    return data;
   } catch (error) {
     console.error(`Error fetching product ${id}:`, error);
     return null;
   }
-};
+}

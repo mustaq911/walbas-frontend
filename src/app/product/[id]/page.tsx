@@ -1,35 +1,30 @@
-import Image from 'next/image';
-import ProductDetails from '@/components/product/ProductDetails';
-import BidHistory from '@/components/product/BidHistory';
-import BidForm from '@/components/product/BidForm';
 import { getProduct } from '@/lib/api-service';
+import Image from 'next/image';
 
-// Using public folder approach
-const defaultAvatar = '/default-avatar.jpg';
-
-interface ProductPageProps {
-  params: { 
-    id: string 
-  };
+interface PageProps {
+  params: Promise<{
+    id: string;
+  }>;
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const productId = params.id;
-  const product = await getProduct(productId);
-  
+export default async function ProductPage({ params }: PageProps) {
+  // Await params to resolve the Promise
+  const resolvedParams = await params;
+  const product = await getProduct(resolvedParams.id);
+
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-md text-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Product Not Found</h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-4 mb-6">
-            The product you&#39;re looking for doesn&#39;t exist or has been removed.
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md text-center p-8 bg-white rounded-xl shadow-lg">
+          <h1 className="text-2xl font-bold">Product Not Found</h1>
+          <p className="text-gray-600 mt-4 mb-6">
+            The product you&#39;re looking for doesn&#39;t exist.
           </p>
           <a
             href="/products"
-            className="inline-block px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Browse Auctions
+            Browse Products
           </a>
         </div>
       </div>
@@ -39,69 +34,57 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const isAuctionEnded = new Date(product.auctionEnd) < new Date();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Product Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate">
-            {product.title}
-          </h1>
-        </div>
-      </div>
-
-      {/* Main Product Content */}
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Gallery */}
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-              <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
-                <Image
-                  src={product.imageUrl || '/placeholder.jpg'}
-                  alt={product.title}
-                  fill
-                  className="object-contain"
-                  priority
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-              </div>
+          {/* Product Image */}
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+              <Image
+                src={product.imageUrl}
+                alt={product.title}
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
           </div>
-          
+
           {/* Product Info */}
           <div className="space-y-6">
-            <ProductDetails 
-              product={{
-                ...product,
-                price: product.basePrice,
-                currentBid: product.basePrice, 
-                seller: {
-                  name: "Sample Seller",
-                  rating: 4.8,
-                  joinDate: "2020-05-15",
-                  avatar: defaultAvatar
-                }
-              }} 
-              isAuctionEnded={isAuctionEnded}
-            />
-            
-            {!isAuctionEnded && (
-              <BidForm 
-                productId={productId} 
-                currentBid={product.basePrice} 
-                isAuctionEnded={isAuctionEnded}
-              />
-            )}
-          </div>
-        </div>
-        
-        {/* Bid History */}
-        <div className="mt-12">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Bid History</h2>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
+              <p className="text-gray-600 mb-4">{product.description}</p>
+
+              <div className="mb-4">
+                <span className="text-sm text-gray-500">Category:</span>
+                <span className="ml-2 text-gray-700">{product.category}</span>
+              </div>
+
+              <div className="text-2xl font-bold mb-4">
+                ${product.basePrice.toFixed(2)}
+              </div>
+
+              <div className="mb-4">
+                <span className="text-sm text-gray-500">Auction ends:</span>
+                <span className="ml-2 text-gray-700">
+                  {new Date(product.auctionEnd).toLocaleString()}
+                </span>
+              </div>
+
+              {isAuctionEnded ? (
+                <button
+                  className="w-full py-3 bg-gray-300 text-gray-700 rounded-lg cursor-not-allowed"
+                  disabled
+                >
+                  Auction Ended
+                </button>
+              ) : (
+                <button className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Place Bid
+                </button>
+              )}
             </div>
-            <BidHistory productId={productId} />
           </div>
         </div>
       </div>

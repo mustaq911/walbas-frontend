@@ -4,7 +4,18 @@
 import Link from 'next/link';
 import SafeImage from '@/components/ui/SafeImage';
 import CountdownTimer from './CountdownTimer';
-import { ProductCardProps } from '@/lib/type';
+import { Product } from '@/lib/type';
+
+type ProductCardProps = Pick<Product, 
+  'id' | 
+  'title' | 
+  'description' | 
+  'category' | 
+  'imageUrl' | 
+  'basePrice' | 
+  'auctionEnd' | 
+  'status'
+>;
 
 export default function ProductCard({
   id,
@@ -21,11 +32,11 @@ export default function ProductCard({
   return (
     <div className="group border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white">
       <div className="relative aspect-square bg-gray-100">
-        <Link href={`/product/${id}`} className="block h-full w-full">
+        <Link href={`/products/${id}`} className="block h-full w-full">
           <SafeImage 
             src={imageUrl} 
             alt={title}
-            className="group-hover:scale-105 transition-transform duration-300"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
           
           <span className={`absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-bold ${
@@ -41,7 +52,7 @@ export default function ProductCard({
           {category}
         </span>
         
-        <Link href={`/product/${id}`}>
+        <Link href={`/products/${id}`}>
           <h3 className="font-semibold text-lg mb-2 line-clamp-2 hover:text-indigo-600 transition">
             {title}
           </h3>
@@ -53,7 +64,7 @@ export default function ProductCard({
         <div className="space-y-1 mb-3">
           <p className="text-sm text-gray-500">Starting Price</p>
           <p className="text-xl font-bold text-gray-900">
-            ${basePrice.toFixed(2)}
+            ${basePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
         
@@ -67,7 +78,7 @@ export default function ProductCard({
         </div>
         
         <Link
-          href={`/product/${id}`}
+          href={`/products/${id}`}
           className="block bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition text-center text-sm font-medium"
         >
           {isAuctionEnded ? 'View Details' : 'Place Bid'}
