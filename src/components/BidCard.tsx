@@ -46,7 +46,7 @@ export default function BidCard({ bid }: BidCardProps) {
           
           <div className="mb-3">
             <p className="text-sm text-gray-600">Time Left</p>
-            <CountdownTimer endTime={new Date(bid.product.endTime)} className="text-sm" />
+            <CountdownTimer endTime={new Date(bid.product.endTime)} />
           </div>
           
           <button className="w-full bg-blue-600 text-white py-1 rounded text-sm hover:bg-blue-700 transition">

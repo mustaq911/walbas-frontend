@@ -1,62 +1,52 @@
-import ProductCard from '../../../components/product/ProductCard';
+import Image from 'next/image';
 import Link from 'next/link';
 
-// Mock data - replace with API later
-const featuredProducts = [
-  {
-    id: 1,
-    title: "Vintage Camera",
-    price: 50,
-    currentBid: 75,
-    imageUrl: "/next.svg", // Replace with actual images
-    endTime: new Date(Date.now() + 86400000) // 1 day from now
-  },
-  {
-    id: 2,
-    title: "Antique Watch",
-    price: 100,
-    currentBid: 120,
-    imageUrl: "/next.svg",
-    endTime: new Date(Date.now() + 172800000) // 2 days from now
-  },
-  {
-    id: 3,
-    title: "Rare Painting",
-    price: 200,
-    currentBid: 250,
-    imageUrl: "/next.svg",
-    endTime: new Date(Date.now() + 259200000) // 3 days from now
-  }
-];
+interface ProductCardProps {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  basePrice: number;
+  auctionEnd: string;
+  status?: string; // Make status optional since it's not in the API
+}
 
-export default function HomePage() {
+export default function ProductCard({
+  id,
+  title,
+  description,
+  category,
+  imageUrl,
+  basePrice,
+  auctionEnd,
+  status,
+}: ProductCardProps) {
+  const isAuctionEnded = new Date(auctionEnd) < new Date();
+
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="bg-blue-600 text-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Discover Unique Items</h1>
-          <p className="text-xl mb-8">Bid on exclusive products or buy them instantly</p>
-          <Link 
-            href="/products" 
-            className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition"
-          >
-            Browse Auctions
-          </Link>
+    <Link href={`/product/${id}`} className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition">
+      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative mb-4">
+        <Image src={imageUrl} alt={title} fill className="object-contain" />
+      </div>
+      <h2 className="text-xl font-semibold mb-2">{title}</h2>
+      <p className="text-gray-600 mb-2 line-clamp-2">{description}</p>
+      <div className="mb-2">
+        <span className="text-sm text-gray-500">Category:</span>
+        <span className="ml-2 text-gray-700">{category}</span>
+      </div>
+      <div className="text-lg font-bold mb-2">${basePrice.toFixed(2)}</div>
+      <div className="text-sm text-gray-500">
+        Auction ends: {new Date(auctionEnd).toLocaleString()}
+      </div>
+      {status && (
+        <div className="text-sm text-gray-500">
+          Status: {status}
         </div>
-      </section>
-
-      {/* Featured Auctions */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8">Featured Auctions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredProducts.map(product => (
-              <ProductCard key={product.id} {...product} />
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
+      )}
+      {isAuctionEnded && (
+        <div className="text-sm text-red-500">Auction Ended</div>
+      )}
+    </Link>
   );
 }
