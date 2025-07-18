@@ -55,14 +55,14 @@ export default function Navbar() {
               href="/products" 
               className={`px-3 py-2 font-medium transition-colors ${pathname === '/products' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'}`}
             >
-              Auctions
+              Products
             </Link>
-            <Link 
+            {/* <Link 
               href="/categories" 
               className={`px-3 py-2 font-medium transition-colors ${pathname === '/categories' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'}`}
             >
               Categories
-            </Link>
+            </Link> */}
             <Link 
               href="/about" 
               className={`px-3 py-2 font-medium transition-colors ${pathname === '/about' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'}`}

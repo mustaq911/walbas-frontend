@@ -9,8 +9,8 @@ if (!API_BASE_URL) {
 
 export async function getProducts(): Promise<Product[]> {
   try {
-    console.log(`Fetching products from: ${API_BASE_URL}/api/products/all`);
-    const response = await fetch(`${API_BASE_URL}/api/products/all`, {
+    console.log(`Fetching products from: ${API_BASE_URL}/products/get/all`);
+    const response = await fetch(`${API_BASE_URL}/products/get/all`, {
       cache: 'no-store', // Ensure fresh data for debugging
     });
     if (!response.ok) {
@@ -28,8 +28,8 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function getProduct(id: string): Promise<Product | null> {
   try {
-    console.log(`Fetching product with ID ${id} from: ${API_BASE_URL}/api/products/${id}`);
-    const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
+    console.log(`Fetching product with ID ${id} from: ${API_BASE_URL}/products/${id}`);
+    const response = await fetch(`${API_BASE_URL}/products/${id}`, {
       cache: 'no-store', // Ensure fresh data for debugging
     });
     if (!response.ok) {
