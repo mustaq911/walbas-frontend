@@ -6,25 +6,25 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'walbas-product.s3.us-east-2.amazonaws.com',
         pathname: '/**',
-      }
+      },
     ],
   },
   async rewrites() {
     return [
       {
         source: '/products/:path*',
-        destination: 'http://3.148.182.60:8080/products/:path*',
+        destination: `${process.env.PRODUCTS_API_BASE_URL}/products/:path*`,
       },
       {
         source: '/user/:path*',
-        destination: 'http://18.117.9.233:8080/user/:path*',
+        destination: `${process.env.USER_API_BASE_URL}/user/:path*`,
       },
-       {
+      {
         source: '/bids',
-        destination: 'http://18.117.9.233:8080/bids/:path*',
+        destination: `${process.env.BIDS_API_BASE_URL}/bids`,
       },
     ];
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
