@@ -2,19 +2,29 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { UserCircleIcon, ShoppingCartIcon, BellIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import Cookies from 'js-cookie';
+import { toast } from 'react-toastify';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const pathname = usePathname();
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Replace with actual auth state
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check for username cookie on mount
+  useEffect(() => {
+    const username = Cookies.get('username');
+    setIsLoggedIn(!!username);
+  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
   }, [pathname]);
 
   // Add scroll effect
@@ -30,12 +40,27 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Replace with actual logout function
+  // Logout function: clear cookies and redirect to login
   const handleLogout = () => {
-    // Clear auth token
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    // Clear all relevant cookies
+    Cookies.remove('token', { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+    Cookies.remove('username', { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+    Cookies.remove('id', { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+    Cookies.remove('email', { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+
     setIsLoggedIn(false);
     setIsUserMenuOpen(false);
+
+    toast.success('Logged out successfully!', {
+      position: 'top-right',
+      autoClose: 2000,
+    });
+
+    // Redirect to login page
+    setTimeout(() => {
+      router.push('/login');
+      router.refresh();
+    }, 1000);
   };
 
   return (
@@ -57,12 +82,6 @@ export default function Navbar() {
             >
               Products
             </Link>
-            {/* <Link 
-              href="/categories" 
-              className={`px-3 py-2 font-medium transition-colors ${pathname === '/categories' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'}`}
-            >
-              Categories
-            </Link> */}
             <Link 
               href="/about" 
               className={`px-3 py-2 font-medium transition-colors ${pathname === '/about' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'}`}
@@ -86,12 +105,13 @@ export default function Navbar() {
                   <button 
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center space-x-2 focus:outline-none"
+                    aria-label="User menu"
                   >
                     <UserCircleIcon className="h-8 w-8 text-gray-600 dark:text-gray-400" />
                   </button>
                   {isUserMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 dark:bg-gray-700">
-                      <Link 
+                      {/* <Link 
                         href="/dashboard" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600"
                       >
@@ -108,13 +128,13 @@ export default function Navbar() {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600"
                       >
                         My Bids
-                      </Link>
+                      </Link> */}
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center dark:text-gray-300 dark:hover:bg-gray-600"
                       >
                         <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
-                        Sign Out
+                        Logout
                       </button>
                     </div>
                   )}
@@ -161,13 +181,7 @@ export default function Navbar() {
               href="/products" 
               className={`block px-3 py-2 rounded-lg transition-colors ${pathname === '/products' ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
-              Auctions
-            </Link>
-            <Link 
-              href="/categories" 
-              className={`block px-3 py-2 rounded-lg transition-colors ${pathname === '/categories' ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-            >
-              Categories
+              Products
             </Link>
             <Link 
               href="/about" 
@@ -195,7 +209,7 @@ export default function Navbar() {
                   className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                 >
                   <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
-                  Sign Out
+                  Logout
                 </button>
               </>
             ) : (

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { toast } from 'react-toastify';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -19,32 +20,40 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
-      // Replace with actual registration logic
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        `/user/register?username=${encodeURIComponent(formData.name)}&password=${encodeURIComponent(formData.password)}&email=${encodeURIComponent(formData.email)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '5000')),
+        }
+      );
 
       if (response.ok) {
-        router.push('/dashboard');
+        toast.success('Successfully user created!', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        setTimeout(() => {
+          router.push('/login');
+        }, 1000);
       } else {
         const data = await response.json();
         setError(data.message || 'Registration failed');
       }
-    } catch {
-      setError('An error occurred during registration');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred during registration');
     } finally {
       setIsLoading(false);
     }
@@ -53,13 +62,11 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-        {/* Header */}
         <div className="bg-indigo-600 p-6 text-center">
           <h1 className="text-3xl font-bold text-white">Join Walbas</h1>
           <p className="text-indigo-100 mt-1">Create your auction account</p>
         </div>
-        
-        {/* Form */}
+
         <div className="p-6">
           {error && (
             <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 text-red-700 rounded-lg">
@@ -67,7 +74,7 @@ export default function RegisterPage() {
               <span>{error}</span>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -77,13 +84,13 @@ export default function RegisterPage() {
                 id="name"
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 placeholder="John Doe"
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -92,13 +99,13 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 placeholder="john@example.com"
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
@@ -107,14 +114,14 @@ export default function RegisterPage() {
                 id="password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 placeholder="••••••••"
                 required
-                minLength={8}
+                minLength={4}
               />
             </div>
-            
+
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 Confirm Password
@@ -123,14 +130,14 @@ export default function RegisterPage() {
                 id="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
-                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 placeholder="••••••••"
                 required
-                minLength={8}
+                minLength={4}
               />
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading}
@@ -140,37 +147,45 @@ export default function RegisterPage() {
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Creating Account...
                 </>
-              ) : 'Register'}
+              ) : (
+                'Register'
+              )}
             </button>
           </form>
-          
+
           <div className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{' '}
             <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
               Sign in
             </Link>
           </div>
-          
+
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or continue with
-                </span>
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
-            
+
             <div className="mt-6 grid grid-cols-2 gap-3">
-              {/* Google Login Button */}
               <button
                 type="button"
                 className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -196,7 +211,6 @@ export default function RegisterPage() {
                 <span>Google</span>
               </button>
 
-              {/* Facebook Login Button */}
               <button
                 type="button"
                 className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"

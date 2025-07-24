@@ -1,13 +1,14 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ExclamationCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { login } from '@/lib/auth';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -20,39 +21,57 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     // Basic validation
-    if (!email.includes('@')) {
-      setError('Please enter a valid email address');
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters');
       return;
     }
-    
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
-      const { token, user } = await login(email, password);
-      
-      // Set secure cookie with optional longer expiry for "remember me"
-      const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 1 day
-      document.cookie = `token=${token}; path=/; max-age=${maxAge}; SameSite=Lax${
-        process.env.NODE_ENV === 'production' ? '; Secure' : ''
-      }`;
-      
-      toast.success(`Welcome back, ${user.name || 'User'}!`);
-      
-      // Redirect based on role
-      router.push(user.role === 'ADMIN' ? '/admin' : '/dashboard');
-      
-      // Refresh to ensure middleware runs
-      router.refresh();
+      const response = await fetch(
+        `/user/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(username)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '5000')),
+        }
+      );
+
+      if (response.ok) {
+        const user = await response.json();
+        // Save user data in cookies
+        const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 1 day
+        Cookies.set('token', user.id.toString(), { expires: maxAge / (24 * 60 * 60), sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+        Cookies.set('username', user.username, { expires: maxAge / (24 * 60 * 60), sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+        Cookies.set('id', user.id.toString(), { expires: maxAge / (24 * 60 * 60), sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+        Cookies.set('email', user.email || '', { expires: maxAge / (24 * 60 * 60), sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+
+        toast.success(`Welcome back, ${user.username || 'User'}!`, {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+
+        // Redirect to products page with full reload
+        setTimeout(() => {
+          window.location.href = '/products';
+        }, 1000);
+      } else {
+        setError('Invalid username or password');
+        toast.error('Login failed. Please check your credentials.');
+      }
     } catch (err) {
-      setError('Invalid email or password');
-      toast.error('Login failed. Please check your credentials.');
+      setError('An error occurred during login');
+      toast.error('Login failed. Please try again.');
       console.error('Login error:', err);
     } finally {
       setIsLoading(false);
@@ -62,7 +81,6 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
-      // Implement Google OAuth flow
       window.location.href = '/api/auth/google';
     } catch (err) {
       toast.error('Google login failed');
@@ -75,7 +93,6 @@ export default function LoginPage() {
   const handleFacebookLogin = async () => {
     setIsFacebookLoading(true);
     try {
-      // Implement Facebook OAuth flow
       window.location.href = '/api/auth/facebook';
     } catch (err) {
       toast.error('Facebook login failed');
@@ -88,13 +105,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 dark:bg-gray-900">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl dark:bg-gray-800">
-        {/* Header */}
         <div className="bg-indigo-600 p-6 text-center">
           <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
           <p className="text-indigo-100 mt-1">Login to your Walbas account</p>
         </div>
-        
-        {/* Form */}
+
         <div className="p-6">
           {error && (
             <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 text-red-700 rounded-lg dark:bg-red-900 dark:text-red-200">
@@ -102,23 +117,23 @@ export default function LoginPage() {
               <span>{error}</span>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-                Email
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
+                Username
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="your@email.com"
+                placeholder="Your username"
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Password
@@ -126,7 +141,7 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -138,13 +153,9 @@ export default function LoginPage() {
                   type="button"
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5" />
-                  )}
+                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
               </div>
               {password.length > 0 && password.length < 6 && (
@@ -153,7 +164,7 @@ export default function LoginPage() {
                 </p>
               )}
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -168,17 +179,17 @@ export default function LoginPage() {
                   Remember me
                 </label>
               </div>
-              
+
               <div className="text-sm">
-                <Link 
-                  href="/forgot-password" 
+                <Link
+                  href="/forgot-password"
                   className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
                   Forgot password?
                 </Link>
               </div>
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading}
@@ -188,26 +199,37 @@ export default function LoginPage() {
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Signing in...
                 </>
-              ) : 'Login'}
+              ) : (
+                'Login'
+              )}
             </button>
           </form>
-          
+
           <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-            Don&apos;t have an account?{' '}
-            <Link 
-              href="/register" 
+            Don't have an account?{' '}
+            <Link
+              href="/register"
               className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
             >
               Sign up
             </Link>
           </div>
-          
+
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -219,9 +241,8 @@ export default function LoginPage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="mt-6 grid grid-cols-2 gap-3">
-              {/* Google Login Button */}
               <button
                 type="button"
                 onClick={handleGoogleLogin}
@@ -231,9 +252,18 @@ export default function LoginPage() {
                 }`}
               >
                 {isGoogleLoading ? (
-                  <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg
+                    className="animate-spin h-5 w-5 text-gray-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                 ) : (
                   <>
@@ -260,7 +290,6 @@ export default function LoginPage() {
                 )}
               </button>
 
-              {/* Facebook Login Button */}
               <button
                 type="button"
                 onClick={handleFacebookLogin}
@@ -270,9 +299,18 @@ export default function LoginPage() {
                 }`}
               >
                 {isFacebookLoading ? (
-                  <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg
+                    className="animate-spin h-5 w-5 text-gray-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                 ) : (
                   <>

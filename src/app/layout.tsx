@@ -1,14 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-// Update the import path if necessary, for example:
 import Navbar from '../components/ui/Navbar';
-// Or, if the file exists elsewhere, adjust the path accordingly.
-// If the file does not exist, create it at src/components/ui/Navbar.tsx or Navbar/index.tsx.
-// Update the import path if necessary, for example:
 import Footer from '../components/ui/Footer';
-// Or, if the file exists elsewhere, adjust the path accordingly.
-// If the file does not exist, create it at src/components/ui/Footer.tsx or Footer/index.tsx.
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -30,6 +26,18 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
       </body>
     </html>
   );
