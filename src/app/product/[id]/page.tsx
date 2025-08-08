@@ -26,7 +26,18 @@ Axi.interceptors.request.use(
 
 export default function ProductViewPage() {
   const { id } = useParams();
-  const [product, setProduct] = useState(null);
+  type Product = {
+    id: number;
+    title: string;
+    description: string;
+    basePrice: number;
+    category: string;
+    status: string;
+    auctionEnd: string;
+    imageUrl: string;
+    // Add other fields as needed
+  };
+  const [product, setProduct] = useState<Product | null>(null);
   const [bidAmount, setBidAmount] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
