@@ -1,18 +1,26 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ExclamationCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { toast } from 'react-toastify';
-import Cookies from 'js-cookie';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ExclamationCircleIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { toast } from "react-toastify";
+import Cookies from "js-cookie";
+import axios from "axios";
+
+const AxiNoAuth = axios.create({
+  baseURL: "",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
@@ -20,25 +28,24 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
-    // Basic validation
-    if (username.length < 3) {
-      setError('Username must be at least 3 characters');
-      toast.error('Username must be at least 3 characters', {
-        position: 'top-right',
+    if (username.length < 1) {
+      setError("Username must be at least 1 character");
+      toast.error("Username must be at least 1 character", {
+        position: "top-right",
         autoClose: 3000,
-        className: 'bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200',
+        className: "bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200",
       });
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      toast.error('Password must be at least 6 characters', {
-        position: 'top-right',
+    if (password.length < 1) {
+      setError("Password must be at least 1 character");
+      toast.error("Password must be at least 1 character", {
+        position: "top-right",
         autoClose: 3000,
-        className: 'bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200',
+        className: "bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200",
       });
       return;
     }
@@ -46,74 +53,66 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        `/user/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(username)}`,
+      const response = await AxiNoAuth.post(
+        `/api/user/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&role=CUSTOMER`,
+        {},
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: AbortSignal.timeout(parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '5000')),
+          timeout: 5000,
         }
       );
 
-      if (response.ok) {
-        const user = await response.json();
-        // Debug cookie setting
-        console.log('User data:', user);
-        console.log('Environment:', {
-          NODE_ENV: process.env.NODE_ENV,
-          HTTPS_ENABLED: process.env.HTTPS_ENABLED,
-        });
+      if (response.status === 200) {
+        console.log("Login response data:", response.data); // Debug response structure
+        const user = response.data;
 
-        // Save user data in cookies
-        const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 1 day
+        // Validate response data
+        if (!user || !user.userId || !user.token) {
+          throw new Error("Invalid response: Missing userId or token");
+        }
+
+        const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
         const cookieOptions = {
-          path: '/',
-          expires: maxAge / (24 * 60 * 60), // Convert seconds to days
-          sameSite: 'lax' as const, // CSRF protection, allows navigation
-          secure: process.env.NODE_ENV === 'production' && process.env.HTTPS_ENABLED === 'true' ? true : false, // Fallback to false if undefined
+          path: "/",
+          expires: maxAge / (24 * 60 * 60),
+          sameSite: "lax" as const,
+          secure: process.env.NODE_ENV === "production" && process.env.HTTPS_ENABLED === "true" ? true : false,
         };
-        console.log('Setting cookies with options:', cookieOptions);
-        Cookies.set('token', user.id.toString(), cookieOptions);
-        Cookies.set('username', user.username, cookieOptions);
-        Cookies.set('id', user.id.toString(), cookieOptions);
-        Cookies.set('email', user.email || '', cookieOptions);
-        // Verify cookies were set
-        console.log('Cookies set:', {
-          token: Cookies.get('token'),
-          username: Cookies.get('username'),
-          id: Cookies.get('id'),
-          email: Cookies.get('email'),
+
+        Cookies.set("token", user.token, cookieOptions);
+        Cookies.set("username", user.username || username, cookieOptions);
+        Cookies.set("id", user.userId.toString(), cookieOptions);
+        console.log("Cookies set:", {
+          token: Cookies.get("token"),
+          username: Cookies.get("username"),
+          id: Cookies.get("id"),
         });
 
-        toast.success(`Welcome back, ${user.username || 'User'}!`, {
-          position: 'top-right',
+        toast.success(`Welcome back, ${user.username || "User"}!`, {
+          position: "top-right",
           autoClose: 3000,
-          className: 'bg-green-50 text-green-800 font-semibold dark:bg-green-900 dark:text-green-200',
+          className: "bg-green-50 text-green-800 font-semibold dark:bg-green-900 dark:text-green-200",
         });
 
-        // Redirect to products page
         setTimeout(() => {
-          router.push('/products');
+          router.push("/products");
         }, 1000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Invalid username or password');
-        toast.error(errorData.message || 'Invalid username or password', {
-          position: 'top-right',
+        setError(response.data.message || "Invalid username or password");
+        toast.error(response.data.message || "Invalid username or password", {
+          position: "top-right",
           autoClose: 3000,
-          className: 'bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200',
+          className: "bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200",
         });
       }
-    } catch (err) {
-      setError('An error occurred during login');
-      toast.error('An error occurred during login. Please try again.', {
-        position: 'top-right',
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || "An error occurred during login";
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        position: "top-right",
         autoClose: 3000,
-        className: 'bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200',
+        className: "bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200",
       });
-      console.error('Login error:', err);
+      console.error("Login error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -121,34 +120,34 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
-    try {
-      window.location.href = '/api/auth/google';
-    } catch (err) {
-      toast.error('Google login failed', {
-        position: 'top-right',
-        autoClose: 3000,
-        className: 'bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200',
-      });
-      console.error('Google login error:', err);
-    } finally {
-      setIsGoogleLoading(false);
-    }
+    // try {
+    //   window.location.href = "/api/auth/google";
+    // } catch (err) {
+    //   toast.error("Google login failed", {
+    //     position: "top-right",
+    //     autoClose: 3000,
+    //     className: "bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200",
+    //   });
+    //   console.error("Google login error:", err);
+    // } finally {
+    //   setIsGoogleLoading(false);
+    // }
   };
 
   const handleFacebookLogin = async () => {
     setIsFacebookLoading(true);
-    try {
-      window.location.href = '/api/auth/facebook';
-    } catch (err) {
-      toast.error('Facebook login failed', {
-        position: 'top-right',
-        autoClose: 3000,
-        className: 'bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200',
-      });
-      console.error('Facebook login error:', err);
-    } finally {
-      setIsFacebookLoading(false);
-    }
+    // try {
+    //   window.location.href = "/api/auth/facebook";
+    // } catch (err) {
+    //   toast.error("Facebook login failed", {
+    //     position: "top-right",
+    //     autoClose: 3000,
+    //     className: "bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-200",
+    //   });
+    //   console.error("Facebook login error:", err);
+    // } finally {
+    //   setIsFacebookLoading(false);
+    // }
   };
 
   return (
@@ -190,28 +189,23 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   placeholder="••••••••"
                   required
-                  minLength={6}
+                  minLength={1}
                 />
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
               </div>
-              {password.length > 0 && password.length < 6 && (
-                <p className="mt-1 text-xs text-red-500 dark:text-red-400">
-                  Password must be at least 6 characters
-                </p>
-              )}
             </div>
 
             <div className="flex items-center justify-between">
@@ -243,7 +237,7 @@ export default function LoginPage() {
               type="submit"
               disabled={isLoading}
               className={`w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition flex items-center justify-center ${
-                isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                isLoading ? "opacity-75 cursor-not-allowed" : ""
               }`}
             >
               {isLoading ? (
@@ -264,13 +258,13 @@ export default function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                'Login'
+                "Login"
               )}
             </button>
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{" "}
             <Link
               href="/register"
               className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
@@ -297,7 +291,7 @@ export default function LoginPage() {
                 onClick={handleGoogleLogin}
                 disabled={isGoogleLoading}
                 className={`w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600 ${
-                  isGoogleLoading ? 'opacity-75 cursor-not-allowed' : ''
+                  isGoogleLoading ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               >
                 {isGoogleLoading ? (
@@ -344,7 +338,7 @@ export default function LoginPage() {
                 onClick={handleFacebookLogin}
                 disabled={isFacebookLoading}
                 className={`w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600 ${
-                  isFacebookLoading ? 'opacity-75 cursor-not-allowed' : ''
+                  isFacebookLoading ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               >
                 {isFacebookLoading ? (
