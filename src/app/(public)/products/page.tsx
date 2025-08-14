@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { Gavel, Trophy, History, Heart} from "lucide-react";
 
 const Axi = axios.create({
   baseURL: "",
@@ -25,10 +26,15 @@ Axi.interceptors.request.use(
 
 export default function ProductPage() {
   const [products, setProducts] = useState([]);
-  const [categories] = useState(["Furniture", "Home Appliance", "Baby Item", "Electronics", "Fashion"]);
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [categories] = useState([
+    "Home Products", "Home Improvement", "Printers", 
+    "Restaurant & Catering", "Hair Care & Salon", 
+    "Weight Management", "Computer Accessories", 
+    "DVD & Home Theater", "PC Desktops", "Televisions"
+  ]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("browse");
   const router = useRouter();
 
   useEffect(() => {
@@ -45,23 +51,6 @@ export default function ProductPage() {
     fetchProducts();
   }, []);
 
-  useEffect(() => {
-    const fetchProductsByCategory = async () => {
-      if (selectedCategory) {
-        setLoading(true);
-        try {
-          const response = await Axi.get(`/api/products/search?category=${selectedCategory}&page=1&size=10`);
-          setProducts(response.data.content);
-        } catch (err) {
-          setError("Failed to fetch products by category. Please try again.");
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchProductsByCategory();
-  }, [selectedCategory]);
-
   const handlePlaceBid = (productId: number) => {
     router.push(`/product/${productId}`);
   };
@@ -71,7 +60,7 @@ export default function ProductPage() {
     const now = new Date();
     const end = new Date(endTime);
     const difference = end.getTime() - now.getTime();
-    return difference > 0 ? Math.floor(difference / 1000) : 0; // Return seconds
+    return difference > 0 ? Math.floor(difference / 1000) : 0;
   };
 
   const [timeLeft, setTimeLeft] = useState<{ [key: number]: number }>({});
@@ -108,51 +97,130 @@ export default function ProductPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
+
       {/* Main Content */}
-      <div className="container mx-auto p-4 flex flex-col md:flex-row gap-6">
-        {/* Right Section */}
-        <aside className="w-full md:w-1/4 bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Categories</h3>
-          <ul className="space-y-2">
-            {categories.map((category) => (
-              <li key={category}>
-                <a
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); setSelectedCategory(category); }}
-                  className={`block text-gray-600 hover:text-blue-600 ${selectedCategory === category ? "text-blue-800 font-medium" : ""}`}
-                >
-                  {category}
-                </a>
-              </li>
-            ))}
-          </ul>
+      <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
+        {/* Left Sidebar */}
+        <aside className="w-full md:w-1/4 space-y-6">
+          {/* Categories */}
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-3 border-b pb-2">Browse Auctions</h3>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">Category</h4>
+                <ul className="space-y-1">
+                  {categories.map((category) => (
+                    <li key={category}>
+                      <a
+                        href="#"
+                        className="block py-1 text-sm text-gray-600 hover:text-blue-600"
+                      >
+                        {category}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">My Profile</h4>
+                <ul className="space-y-1">
+                  <li>
+                    <a 
+                      href="#" 
+                      className="flex items-center space-x-2 py-1 text-sm text-gray-600 hover:text-blue-600"
+                      onClick={(e) => { e.preventDefault(); setActiveTab("mybids"); }}
+                    >
+                      <Gavel size={16} className="w-4 h-4" />
+                      <span>My Bids</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="#" 
+                      className="flex items-center space-x-2 py-1 text-sm text-gray-600 hover:text-blue-600"
+                      onClick={(e) => { e.preventDefault(); setActiveTab("mybids"); }}
+                    >
+                      <Trophy size={16} className="w-4 h-4" />
+                      <span>Won Items</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="#" 
+                      className="flex items-center space-x-2 py-1 text-sm text-gray-600 hover:text-blue-600"
+                      onClick={(e) => { e.preventDefault(); setActiveTab("mybids"); }}
+                    >
+                      <History size={16} className="w-4 h-4" />
+                      <span>Purchase History</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="#" 
+                      className="flex items-center space-x-2 py-1 text-sm text-gray-600 hover:text-blue-600"
+                      onClick={(e) => { e.preventDefault(); setActiveTab("mybids"); }}
+                    >
+                      <Heart size={16} className="w-4 h-4" />
+                      <span>Watchlist</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Ending Soon Section */}
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-3 border-b pb-2">Ending Soon</h3>
+            <ul className="space-y-2">
+              <li><a href="#" className="text-sm text-blue-600 hover:underline">Qualified Sellers</a></li>
+              <li><a href="#" className="text-sm text-blue-600 hover:underline">Featured</a></li>
+              <li><a href="#" className="text-sm text-blue-600 hover:underline">Advanced</a></li>
+              <li><a href="#" className="text-sm text-blue-600 hover:underline">Search Electronics</a></li>
+            </ul>
+          </div>
         </aside>
 
-        {/* Center Section */}
-        <main className="w-full md:w-2/4 bg-white p-6 rounded-lg shadow flex-1">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-blue-800">Build Your Business</h2>
-            <p className="text-gray-600">One Pallet at a Time.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Main Content Area */}
+        <main className="w-full md:w-3/4">
+
+          {/* Products Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((product: any) => (
-              <div key={product.id} className="bg-gray-50 p-4 rounded-lg shadow hover:shadow-lg transition-shadow">
-                <img src={product.imageUrl} alt={product.title} className="w-full h-32 object-cover mb-2" />
-                <h3 className="text-md font-semibold">{product.title}</h3>
-                <p className="text-sm text-gray-600">Quantity in Lot: {product.quantity || 14}</p>
-                <p className="text-sm text-green-600">Current Bid: CAD ${product.basePrice.toFixed(2)}</p>
-                <p className="text-sm text-gray-600">Per Unit Price: CAD {((product.basePrice / (product.quantity || 14)).toFixed(2))}</p>
-                <p className="text-sm text-gray-500">
-                  Status: <span className={product.status === "ONGOING" ? "text-green-600" : "text-red-600"}>{product.status}</span>
-                </p>
-                {product.status === "ONGOING" && (
-                  <p className="text-sm text-gray-700">Time Left: {formatTime(timeLeft[product.id] || 0)}</p>
-                )}
+              <div key={product.id} className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-100">
+                <img 
+                  src={product.imageUrl} 
+                  alt={product.title} 
+                  className="w-full h-40 object-contain mb-3 bg-gray-100 p-2 rounded"
+                  onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
+                />
+                <h3 className="text-md font-semibold mb-1">{product.title}</h3>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">Quantity:</span>
+                  <span className="font-medium">{product.quantity || 14}</span>
+                </div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">Current Bid:</span>
+                  <span className="font-medium text-green-600">CAD ${product.basePrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">Per Unit:</span>
+                  <span className="font-medium">CAD {((product.basePrice / (product.quantity || 14)).toFixed(2))}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs mb-3">
+                  <span className={`px-2 py-1 rounded ${product.status === "ONGOING" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                    {product.status}
+                  </span>
+                  {product.status === "ONGOING" && (
+                    <span className="text-gray-700">{formatTime(timeLeft[product.id] || 0)}</span>
+                  )}
+                </div>
                 {product.status === "ONGOING" && (
                   <button
                     onClick={() => handlePlaceBid(product.id)}
-                    className="mt-2 w-full bg-blue-600 text-white py-1 rounded hover:bg-blue-700 transition-colors"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition-colors"
                   >
                     Place Bid
                   </button>
@@ -160,8 +228,11 @@ export default function ProductPage() {
               </div>
             ))}
           </div>
+
           {products.length === 0 && (
-            <div className="text-center py-10 text-gray-600">No products available.</div>
+            <div className="bg-white p-8 rounded-lg shadow text-center">
+              <p className="text-gray-600">No products available at the moment.</p>
+            </div>
           )}
         </main>
       </div>
