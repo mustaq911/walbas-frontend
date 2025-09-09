@@ -118,21 +118,24 @@ export default function ProductViewPage() {
               forceUpdate(() => {
                 setHighestBid(evt.highestBid);
                 // Update product if needed
-                setProduct(prev => prev ? { ...prev, highestBid: evt.highestBid } : prev);
+                setProduct(prev => prev ? { ...prev, highestBid: evt.highestBid ?? prev.highestBid } : prev);
                 // Show toast for new bid
-                toast.info(`New highest bid: $${evt.highestBid.toFixed(2)}`, {
-                  position: "top-right",
-                  autoClose: 2000,
-                  className: "bg-yellow-50 text-yellow-800",
-                });
+                toast.info(
+                  `New highest bid: $${evt.highestBid !== null ? evt.highestBid.toFixed(2) : "N/A"}`,
+                  {
+                    position: "top-right",
+                    autoClose: 2000,
+                    className: "bg-yellow-50 text-yellow-800",
+                  }
+                );
               });
             }
 
             // Update auction end time → reset countdown
             if (evt.auctionEnd) {
               forceUpdate(() => {
-                const newEndStr = evt.auctionEnd;
-                setProduct(prev => prev ? { ...prev, auctionEnd: newEndStr } : prev);
+                const newEndStr = evt.auctionEnd ?? "";
+                setProduct(prev => prev ? { ...prev, auctionEnd: newEndStr !== "" ? newEndStr : prev.auctionEnd } : prev);
                 const newTimeLeft = calculateTimeLeft(newEndStr);
                 setTimeLeft(newTimeLeft);
               });
