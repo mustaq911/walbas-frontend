@@ -93,7 +93,7 @@ export default function ProductViewPage() {
 
     // Replace with your actual backend URL (e.g., http://localhost:8080/ws/auction)
     // If using Next.js proxy, use relative path: '/ws/auction'
-    const socket = new SockJS(`http://18.117.9.233:8080/ws/auction`); // Adjust URL as needed
+    const socket = new SockJS(`https://18.117.9.233:8080/ws/auction`); // Adjust URL as needed
     const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
