@@ -27,12 +27,19 @@ Axi.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Updated Product type to handle category as string or object
+type Category = {
+  id: number;
+  name: string;
+  active: boolean;
+};
+
 type Product = {
   id: number;
   title: string;
   description: string;
   basePrice: number;
-  category: string;
+  category: string | Category;
   status: string;
   auctionEnd: string;
   imageUrl: string;
@@ -52,6 +59,17 @@ type AuctionEvent = {
   type?: string;
 };
 
+// Helper function to normalize category to string
+const getCategoryName = (category: Product['category']): string => {
+  if (typeof category === 'string') {
+    return category;
+  }
+  if (category && typeof category === 'object' && 'name' in category) {
+    return category.name;
+  }
+  return 'Unknown Category';
+};
+
 export default function ProductViewPage() {
   const { id } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
@@ -68,8 +86,9 @@ export default function ProductViewPage() {
 
   // Set product ID ref
   useEffect(() => {
-    if (id) {
-      productIdRef.current = id as string;
+    const productId = Array.isArray(id) ? id[0] : id;
+    if (productId) {
+      productIdRef.current = productId;
     }
   }, [id]);
 
@@ -91,35 +110,29 @@ export default function ProductViewPage() {
   connectSocket.current = () => {
     if (!productIdRef.current || isConnectedRef.current) return;
 
-    // Replace with your actual backend URL (e.g., http://localhost:8080/ws/auction)
-    // If using Next.js proxy, use relative path: '/ws/auction'
-    const socket = new SockJS(`https://18.117.9.233:8080/ws/auction`); // Adjust URL as needed
+    const socket = new SockJS(`https://18.117.9.233:8080/ws/auction`);
     const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       debug: (str) => {
-        console.log("STOMP Debug:", str); // Enable for debugging
+        console.log("STOMP Debug:", str);
       },
       onConnect: () => {
         console.log("✅ Connected to WebSocket");
         isConnectedRef.current = true;
 
-        // Subscribe to this product topic
         const subscription = client.subscribe(`/topic/auction.${productIdRef.current}`, (frame) => {
           console.log("📨 Received raw frame:", frame.body);
           try {
             const evt: AuctionEvent = JSON.parse(frame.body);
             console.log("🔄 Auction event:", evt);
 
-            // Update highest bid
             if (evt.highestBid != null) {
               forceUpdate(() => {
                 setHighestBid(evt.highestBid);
-                // Update product if needed
                 setProduct(prev => prev ? { ...prev, highestBid: evt.highestBid ?? prev.highestBid } : prev);
-                // Show toast for new bid
                 toast.info(
                   `New highest bid: $${evt.highestBid !== null ? evt.highestBid.toFixed(2) : "N/A"}`,
                   {
@@ -131,7 +144,6 @@ export default function ProductViewPage() {
               });
             }
 
-            // Update auction end time → reset countdown
             if (evt.auctionEnd) {
               forceUpdate(() => {
                 const newEndStr = evt.auctionEnd ?? "";
@@ -141,7 +153,6 @@ export default function ProductViewPage() {
               });
             }
 
-            // Optional UI hint if extended
             if (evt.type === 'AUCTION_EXTENDED') {
               forceUpdate(() => {
                 toast.info('Auction extended by 5 minutes due to last-minute bid!', {
@@ -151,17 +162,11 @@ export default function ProductViewPage() {
                 });
               });
             }
-
-            // Update bid count if you want to show it (optional)
-            // if (typeof evt.bidCount === 'number') {
-            //   setBidCount(evt.bidCount);
-            // }
           } catch (parseError) {
             console.error("❌ Error parsing WebSocket message:", parseError);
           }
         });
 
-        // Store subscription reference if needed for cleanup
         (client as any).subscription = subscription;
         setStompClient(client);
       },
@@ -173,7 +178,6 @@ export default function ProductViewPage() {
           autoClose: 2000,
           className: "bg-red-50 text-red-700",
         });
-        // Auto-reconnect after delay
         setTimeout(() => {
           if (!isConnectedRef.current) {
             connectSocket.current?.();
@@ -201,7 +205,6 @@ export default function ProductViewPage() {
       connectSocket.current?.();
     }
 
-    // Cleanup on unmount or status change
     return () => {
       if (clientRef.current) {
         console.log("🧹 Cleaning up WebSocket");
@@ -215,24 +218,32 @@ export default function ProductViewPage() {
   // Fetch product data
   useEffect(() => {
     const fetchProduct = async () => {
-      if (!id) return;
+      const productId = Array.isArray(id) ? id[0] : id;
+      if (!productId) {
+        setError("Invalid product ID");
+        setLoading(false);
+        return;
+      }
       try {
-        const response = await Axi.get(`/api/products/${id}`);
+        const response = await Axi.get(`/api/products/${productId}`);
         const productData = response.data;
-        
-        // Initialize highest bid from product data if available
+
+        // Normalize category to string
+        if (productData.category && typeof productData.category === 'object') {
+          productData.category = getCategoryName(productData.category);
+        }
+
+        setProduct(productData);
+
         if (productData.highestBid) {
           setHighestBid(productData.highestBid);
         }
-        
-        setProduct(productData);
-        
-        // Initialize timeLeft immediately
+
         if (productData.status === "ONGOING") {
           const initialTime = calculateTimeLeft(productData.auctionEnd);
           setTimeLeft(initialTime);
         }
-        
+
         setLoading(false);
       } catch (err: any) {
         console.error("❌ Fetch error:", err);
@@ -251,7 +262,6 @@ export default function ProductViewPage() {
     const timer = setInterval(() => {
       setTimeLeft((prevTime) => {
         if (prevTime <= 1) {
-          // Auction ended
           clearInterval(timer);
           if (stompClient) {
             stompClient.deactivate();
@@ -291,7 +301,7 @@ export default function ProductViewPage() {
       return;
     }
 
-    const currentMinBid = (highestBid || product?.basePrice || 0) + 0.01;
+    const currentMinBid = (highestBid ?? product?.basePrice ?? 0) + 0.01;
     if (!bidAmount || parseFloat(bidAmount) <= currentMinBid) {
       setError(`Bid must be higher than $${currentMinBid.toFixed(2)}`);
       return;
@@ -308,8 +318,9 @@ export default function ProductViewPage() {
 
     setLoading(true);
     try {
+      const productId = Array.isArray(id) ? id[0] : id;
       const response = await Axi.post("/api/bids", {
-        productId: parseInt(id as string),
+        productId: parseInt(productId as string),
         userId: parseInt(userId),
         bidAmount: parseFloat(bidAmount),
       });
@@ -321,8 +332,6 @@ export default function ProductViewPage() {
         });
         setBidAmount("");
         setError("");
-        // The WebSocket will update the UI with the new highest bid
-        // Clear any existing highest bid from local state temporarily
         setHighestBid(null);
       }
     } catch (err: any) {
@@ -382,13 +391,12 @@ export default function ProductViewPage() {
     </div>
   );
 
-  // Get current highest bid (prioritize WebSocket state over product data)
-  const currentHighestBid = highestBid !== null ? highestBid : product.highestBid;
+  // Ensure currentHighestBid is a number, fallback to basePrice or 0
+  const currentHighestBid = highestBid ?? product.highestBid ?? product.basePrice ?? 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Debug indicator for development */}
         {process.env.NODE_ENV === 'development' && (
           <div className="fixed top-0 right-0 bg-blue-500 text-white p-2 text-xs z-50 rounded-bl-lg">
             WS Status: {isConnectedRef.current ? '✅ Connected' : '❌ Disconnected'}
@@ -411,7 +419,7 @@ export default function ProductViewPage() {
                 <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
-                <span className="ml-1 text-sm font-medium text-gray-500 md:ml-2">{product.category}</span>
+                <span className="ml-1 text-sm font-medium text-gray-500 md:ml-2">{getCategoryName(product.category)}</span>
               </div>
             </li>
             <li aria-current="page">
@@ -452,7 +460,7 @@ export default function ProductViewPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
-                  <p className="text-indigo-600 font-medium mt-1">{product.category}</p>
+                  <p className="text-indigo-600 font-medium mt-1">{getCategoryName(product.category)}</p>
                 </div>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                   product.status === "ONGOING" 
@@ -474,8 +482,7 @@ export default function ProductViewPage() {
                   <span className="ml-2 font-bold text-indigo-600">${product.basePrice.toFixed(2)}</span>
                 </div>
 
-                {/* Current Highest Bid Display - Real-time */}
-                {product.status === "ONGOING" && currentHighestBid !== undefined && (
+                {product.status === "ONGOING" && (
                   <div className="flex items-center bg-yellow-50 border border-yellow-200 rounded-lg p-3 animate-pulse">
                     <DollarSign className="h-5 w-5 text-yellow-600 mr-2" />
                     <span className="text-gray-700 font-medium">Current Highest Bid: </span>
@@ -533,7 +540,7 @@ export default function ProductViewPage() {
                 <div className="mt-10">
                   <div className="mb-4">
                     <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700 mb-1">
-                      Place Your Bid (Minimum: ${((currentHighestBid || product?.basePrice || 0) + 0.01).toFixed(2)})
+                      Place Your Bid (Minimum: ${(currentHighestBid + 0.01).toFixed(2)})
                     </label>
                     <div className="relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -547,7 +554,7 @@ export default function ProductViewPage() {
                         onChange={(e) => setBidAmount(e.target.value)}
                         className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 py-3 sm:text-sm border-gray-300 rounded-md"
                         placeholder="0.00"
-                        min={(currentHighestBid || product?.basePrice || 0) + 0.01}
+                        min={currentHighestBid + 0.01}
                         step="0.01"
                         disabled={timeLeft <= 0}
                       />
@@ -604,7 +611,7 @@ export default function ProductViewPage() {
                 <ul className="space-y-2">
                   <li className="flex">
                     <span className="text-gray-600 w-32">Category</span>
-                    <span className="text-gray-900">{product.category}</span>
+                    <span className="text-gray-900">{getCategoryName(product.category)}</span>
                   </li>
                   {product.condition && (
                     <li className="flex">
@@ -626,12 +633,10 @@ export default function ProductViewPage() {
                       {product.status}
                     </span>
                   </li>
-                  {currentHighestBid !== undefined && (
-                    <li className="flex">
-                      <span className="text-gray-600 w-32">Highest Bid</span>
-                      <span className="text-gray-900 font-semibold">${currentHighestBid.toFixed(2)}</span>
-                    </li>
-                  )}
+                  <li className="flex">
+                    <span className="text-gray-600 w-32">Highest Bid</span>
+                    <span className="text-gray-900 font-semibold">${currentHighestBid.toFixed(2)}</span>
+                  </li>
                 </ul>
               </div>
               <div>

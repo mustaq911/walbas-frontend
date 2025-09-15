@@ -23,12 +23,29 @@ Axi.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+type Product = {
+  id: string | number;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  categoryName?: string;
+  auctionEnd?: string;
+  auctionStart?: string;
+  basePrice?: number;
+  highestBid?: number;
+};
+
+type Category = {
+  id: string | number;
+  name: string;
+};
+
 const FeaturedAuctions = () => {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -71,11 +88,9 @@ const FeaturedAuctions = () => {
     fetchProducts();
   }, [selectedCategory]);
 
-  const handleCategoryChange = (e) => {
-    setSelectedCategory(e.target.value);
-  };
+  // Category change handler is not used because the category filter UI is commented out.
 
-  const formatPrice = (price) => {
+  const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -84,7 +99,7 @@ const FeaturedAuctions = () => {
     }).format(price);
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
 
@@ -174,7 +189,7 @@ const FeaturedAuctions = () => {
                         fill
                         className="object-cover"
                         onError={(e) => {
-                          e.target.src = '/placeholder-image.png';
+                          (e.target as HTMLImageElement).src = '/placeholder-image.png';
                         }}
                       />
                     ) : (
