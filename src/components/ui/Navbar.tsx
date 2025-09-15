@@ -1,11 +1,19 @@
-'use client';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+//* eslint-disable react/jsx-no-undef */
+"use client";
 
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { UserCircleIcon, ShoppingCartIcon, BellIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
-import Cookies from 'js-cookie';
-import { toast } from 'react-toastify';
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import {
+  UserCircleIcon,
+  ShoppingCartIcon,
+  BellIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
+import Cookies from "js-cookie";
+import { toast } from "react-toastify";
+import { ClockAlertIcon, Gavel, Heart, Trophy } from "lucide-react";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -14,10 +22,18 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+  const storedId = Cookies.get("id");
+  if (storedId) {
+    setUserId(storedId);
+  }
+}, []);
 
   // Check for username cookie on mount
   useEffect(() => {
-    const username = Cookies.get('username');
+    const username = Cookies.get("username");
     setIsLoggedIn(!!username);
   }, []);
 
@@ -36,35 +52,61 @@ export default function Navbar() {
         setIsScrolled(false);
       }
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Logout function: clear cookies and redirect to login
   const handleLogout = () => {
     // Clear all relevant cookies
-    Cookies.remove('token', { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-    Cookies.remove('username', { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-    Cookies.remove('id', { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-    Cookies.remove('email', { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+    Cookies.remove("token", {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+    Cookies.remove("username", {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+    Cookies.remove("id", {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+    Cookies.remove("email", {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
 
     setIsLoggedIn(false);
     setIsUserMenuOpen(false);
 
-    toast.success('Logged out successfully!', {
-      position: 'top-right',
+    toast.success("Logged out successfully!", {
+      position: "top-right",
       autoClose: 2000,
     });
 
     // Redirect to login page
     setTimeout(() => {
-      router.push('/login');
+      router.push("/login");
       router.refresh();
     }, 1000);
   };
 
+  function setActiveTab(arg0: string) {
+    throw new Error("Function not implemented.");
+  }
+
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-lg dark:bg-gray-800' : 'bg-white/90 backdrop-blur-sm dark:bg-gray-800/90'}`}>
+    <nav
+      className={`fixed w-full z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-white shadow-lg dark:bg-gray-800"
+          : "bg-white/90 backdrop-blur-sm dark:bg-gray-800/90"
+      }`}
+    >
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           {/* Logo */}
@@ -76,15 +118,23 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link 
-              href="/products" 
-              className={`px-3 py-2 font-medium transition-colors ${pathname === '/products' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'}`}
+            <Link
+              href="/products"
+              className={`px-3 py-2 font-medium transition-colors ${
+                pathname === "/products"
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
+              }`}
             >
               Products
             </Link>
-            <Link 
-              href="/about" 
-              className={`px-3 py-2 font-medium transition-colors ${pathname === '/about' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'}`}
+            <Link
+              href="/about"
+              className={`px-3 py-2 font-medium transition-colors ${
+                pathname === "/about"
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
+              }`}
             >
               About
             </Link>
@@ -102,7 +152,7 @@ export default function Navbar() {
                   </span>
                 </button>
                 <div className="relative">
-                  <button 
+                  <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center space-x-2 focus:outline-none"
                     aria-label="User menu"
@@ -129,27 +179,112 @@ export default function Navbar() {
                       >
                         My Bids
                       </Link> */}
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center dark:text-gray-300 dark:hover:bg-gray-600"
-                      >
-                        <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
-                        Logout
-                      </button>
+                      <div>
+                        <h4 className="w-full text-left px-4 py-2 text-sm text-gray-700 flex items-center dark:text-gray-300 ">
+                          My Profile
+                        </h4>
+                        <ul className="space-y-1">
+                          <li>
+                            <a
+                              href="#"
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center dark:text-gray-300 dark:hover:bg-gray-600"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setActiveTab("mybids");
+                              }}
+                            >
+                              <Gavel size={16} className="w-4 h-4" /> &nbsp;
+                              &nbsp;
+                              {/* <span>My Bids</span> */}
+                              <Link
+                                href="/user/my-bids"
+                                className="hover:underline"
+                              >
+                                My Bids
+                              </Link>
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="#"
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center dark:text-gray-300 dark:hover:bg-gray-600"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setActiveTab("mybids");
+                              }}
+                            >
+                              <Trophy size={16} className="w-4 h-4" /> &nbsp;
+                              &nbsp;
+                              {/* <span>Won Items</span> */}
+                              <Link
+                                href="/user/won-items"
+                                className="hover:underline"
+                              >
+                                Won Items
+                              </Link>
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="#"
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center dark:text-gray-300 dark:hover:bg-gray-600"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setActiveTab("mybids");
+                              }}
+                            >
+                              <ClockAlertIcon size={16} className="w-4 h-4" />{" "}
+                              &nbsp; &nbsp;
+                              {/* <span>Purchase History</span> */}
+                              <Link
+                                href={userId ? `/user/purchase-history/${userId}` : "#"}
+                                className="hover:underline"
+                              >
+                                Purchase History
+                              </Link>
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="#"
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center dark:text-gray-300 dark:hover:bg-gray-600"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setActiveTab("mybids");
+                              }}
+                            >
+                              <Heart size={16} className="w-4 h-4" /> &nbsp;
+                              &nbsp;
+                              <span>Watchlist</span>
+                            </a>
+                          </li>
+                        </ul>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center dark:text-gray-300 dark:hover:bg-gray-600"
+                        >
+                          <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />{" "}
+                          &nbsp; &nbsp; Logout
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link 
-                  href="/login" 
-                  className={`px-4 py-2 font-medium transition-colors ${pathname === '/login' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'}`}
+                <Link
+                  href="/login"
+                  className={`px-4 py-2 font-medium transition-colors ${
+                    pathname === "/login"
+                      ? "text-indigo-600 dark:text-indigo-400"
+                      : "text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
+                  }`}
                 >
                   Login
                 </Link>
-                <Link 
-                  href="/register" 
+                <Link
+                  href="/register"
                   className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-500 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-blue-600 transition-all shadow-md"
                 >
                   Register
@@ -164,11 +299,26 @@ export default function Navbar() {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               {isMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               )}
             </svg>
           </button>
@@ -177,30 +327,46 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden mt-4 space-y-2 pb-3">
-            <Link 
-              href="/products" 
-              className={`block px-3 py-2 rounded-lg transition-colors ${pathname === '/products' ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            <Link
+              href="/products"
+              className={`block px-3 py-2 rounded-lg transition-colors ${
+                pathname === "/products"
+                  ? "bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
             >
               Products
             </Link>
-            <Link 
-              href="/about" 
-              className={`block px-3 py-2 rounded-lg transition-colors ${pathname === '/about' ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            <Link
+              href="/about"
+              className={`block px-3 py-2 rounded-lg transition-colors ${
+                pathname === "/about"
+                  ? "bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
             >
               About
             </Link>
 
             {isLoggedIn ? (
               <>
-                <Link 
-                  href="/dashboard" 
-                  className={`block px-3 py-2 rounded-lg transition-colors ${pathname === '/dashboard' ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                <Link
+                  href="/dashboard"
+                  className={`block px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/dashboard"
+                      ? "bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  }`}
                 >
                   Dashboard
                 </Link>
-                <Link 
-                  href="/my-bids" 
-                  className={`block px-3 py-2 rounded-lg transition-colors ${pathname === '/my-bids' ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                <Link
+                  href="/my-bids"
+                  className={`block px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/my-bids"
+                      ? "bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  }`}
                 >
                   My Bids
                 </Link>
@@ -214,14 +380,18 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link 
-                  href="/login" 
-                  className={`block px-3 py-2 rounded-lg transition-colors ${pathname === '/login' ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                <Link
+                  href="/login"
+                  className={`block px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/login"
+                      ? "bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  }`}
                 >
                   Login
                 </Link>
-                <Link 
-                  href="/register" 
+                <Link
+                  href="/register"
                   className="block px-3 py-2 bg-gradient-to-r from-indigo-600 to-blue-500 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-blue-600 transition-all text-center"
                 >
                   Register
